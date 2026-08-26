@@ -2,6 +2,7 @@ using System.Net;
 using CadastroCliente.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CadastroClientes.Infrastructure;
 
@@ -40,17 +41,9 @@ public sealed class ExceptionHandlingMiddleware
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(g => string.IsNullOrWhiteSpace(g.Key) ? "request" : ToCamel(g.Key),
                         g => g.Select(e => e.ErrorMessage).ToArray())),
+            DbUpdateConcurrencyException => (HttpStatusCode.Conflict, "O registro foi alterado por outro processo. Recarregue e tente novamente.", null),
             _ => (HttpStatusCode.InternalServerError, "Erro interno ao processar a requisição.", (IReadOnlyDictionary<string, string[]>?)null)
         };
-
-        if (status == HttpStatusCode.InternalServerError)
-        {
-            _logger.LogError(exception, "Unhandled exception");
-        }
-        else
-        {
-            _logger.LogWarning(exception, "Handled domain exception {Status}", status);
-        }
 
         var problem = new ProblemDetails
         {
@@ -63,6 +56,20 @@ public sealed class ExceptionHandlingMiddleware
         if (errors is { Count: > 0 })
         {
             problem.Extensions["errors"] = errors;
+        }
+
+        if (status == HttpStatusCode.InternalServerError)
+        {
+            _logger.LogError(exception, "Unhandled exception");
+            var env = context.RequestServices.GetRequiredService<IHostEnvironment>();
+            if (!env.IsProduction())
+            {
+                problem.Detail = exception.ToString();
+            }
+        }
+        else
+        {
+            _logger.LogWarning(exception, "Handled domain exception {Status}", status);
         }
 
         context.Response.StatusCode = problem.Status.Value;

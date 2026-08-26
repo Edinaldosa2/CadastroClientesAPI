@@ -32,7 +32,7 @@ public sealed class Contato : EntityBase
         Valor = NormalizarValor(tipo, valor);
         Nome = string.IsNullOrWhiteSpace(nome) ? null : nome.Trim();
         Principal = principal;
-        CriadoEm = agora;
+        CriadoEm = agora.UtcDateTime;
     }
 
     internal void Atualizar(TipoContato tipo, string valor, string? nome, DateTimeOffset agora)

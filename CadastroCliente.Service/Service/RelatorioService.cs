@@ -48,7 +48,7 @@ public sealed class RelatorioService : IRelatorioAppService
                 cliente.Status,
                 Escape(endereco?.Cidade),
                 endereco?.Uf,
-                cliente.CriadoEm.UtcDateTime.ToString("o")));
+                cliente.CriadoEm.ToString("o")));
         }
 
         return sb.ToString();

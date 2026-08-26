@@ -41,7 +41,7 @@ public sealed class Cliente : EntityBase
         var cliente = new Cliente
         {
             Id = Guid.NewGuid(),
-            CriadoEm = agora,
+            CriadoEm = agora.UtcDateTime,
             Status = StatusCliente.Ativo
         };
 

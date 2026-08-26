@@ -21,8 +21,8 @@ public static class ClienteMapper
         MotivoStatus = cliente.MotivoStatus,
         Observacoes = cliente.Observacoes,
         Excluido = cliente.Excluido,
-        CriadoEm = cliente.CriadoEm,
-        AtualizadoEm = cliente.AtualizadoEm,
+        CriadoEm = new DateTimeOffset(cliente.CriadoEm, TimeSpan.Zero),
+        AtualizadoEm = cliente.AtualizadoEm is null ? null : new DateTimeOffset(cliente.AtualizadoEm.Value, TimeSpan.Zero),
         Enderecos = cliente.Enderecos.Select(ToDto).ToList(),
         Contatos = cliente.Contatos.Select(ToDto).ToList()
     };
@@ -41,7 +41,7 @@ public static class ClienteMapper
             Status = cliente.Status,
             Cidade = principal?.Cidade,
             Uf = principal?.Uf,
-            CriadoEm = cliente.CriadoEm
+            CriadoEm = new DateTimeOffset(cliente.CriadoEm, TimeSpan.Zero)
         };
     }
 

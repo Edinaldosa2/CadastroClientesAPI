@@ -45,6 +45,7 @@ public sealed class ContatoService : IContatoAppService
         await _validator.ValidateAndThrowAsync(request, cancellationToken);
         var cliente = await ObterCliente(clienteId, cancellationToken);
         var contato = cliente.AdicionarContato(request.Tipo, request.Valor, request.Nome, request.Principal, _clock.UtcNow);
+        _unitOfWork.RegisterNew(contato);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return ClienteMapper.ToDto(contato);
     }
