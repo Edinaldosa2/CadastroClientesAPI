@@ -1,12 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CadastroCliente.Data.Context;
+using CadastroCliente.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
-namespace CadastroCliente.Data.Repository
+namespace CadastroCliente.Data.Repository;
+
+public abstract class BaseRepository<TEntity> where TEntity : EntityBase
 {
-    internal class BaseRepository
+    protected readonly CadastroClienteContext Context;
+    protected readonly DbSet<TEntity> Set;
+
+    protected BaseRepository(CadastroClienteContext context)
     {
+        Context = context;
+        Set = context.Set<TEntity>();
     }
 }
