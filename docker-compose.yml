@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: CadastroClientes/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: Data Source=/app/data/cadastro-clientes.db
+    volumes:
+      - clientes-data:/app/data
+
+volumes:
+  clientes-data:
