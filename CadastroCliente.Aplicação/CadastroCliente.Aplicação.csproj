@@ -1,16 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <RootNamespace>CadastroCliente.Aplicacao</RootNamespace>
+    <AssemblyName>CadastroCliente.Aplicacao</AssemblyName>
   </PropertyGroup>
-
   <ItemGroup>
-    <Folder Include="AutoMapper\" />
-    <Folder Include="Interface\" />
-    <Folder Include="ViewModels\" />
-    <Folder Include="Services\" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\CadastroCliente.Domain\CadastroCliente.Domain.csproj" />
+    <ProjectReference Include="..\Cadastro.CrossCutting\CadastroCliente.CrossCutting.csproj" />
+  </ItemGroup>
 </Project>
