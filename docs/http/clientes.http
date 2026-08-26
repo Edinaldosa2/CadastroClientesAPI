@@ -1,0 +1,66 @@
+@baseUrl = http://localhost:5105
+@id = 00000000-0000-0000-0000-000000000000
+
+### Catalog
+GET {{baseUrl}}/api
+
+### Health
+GET {{baseUrl}}/health/ready
+
+### List customers
+GET {{baseUrl}}/api/v1/clientes?pagina=1&tamanhoPagina=20&ordenarPor=nome
+
+### Create person
+POST {{baseUrl}}/api/v1/clientes
+Content-Type: application/json
+Idempotency-Key: demo-joao
+
+{
+  "nome": "João da Silva",
+  "tipoPessoa": "Fisica",
+  "documento": "11144477735",
+  "dataNascimento": "1985-03-10",
+  "enderecos": [
+    {
+      "tipo": "Residencial",
+      "logradouro": "Rua Augusta",
+      "numero": "200",
+      "bairro": "Consolação",
+      "cidade": "São Paulo",
+      "uf": "SP",
+      "cep": "01305000",
+      "principal": true
+    }
+  ],
+  "contatos": [
+    {
+      "tipo": "Email",
+      "valor": "joao@example.com",
+      "principal": true
+    }
+  ]
+}
+
+### Get by document
+GET {{baseUrl}}/api/v1/clientes/documento/11144477735
+
+### Add address
+POST {{baseUrl}}/api/v1/clientes/{{id}}/enderecos
+Content-Type: application/json
+
+{
+  "tipo": "Comercial",
+  "logradouro": "Avenida Paulista",
+  "numero": "1578",
+  "bairro": "Bela Vista",
+  "cidade": "São Paulo",
+  "uf": "SP",
+  "cep": "01310200",
+  "principal": false
+}
+
+### Summary report
+GET {{baseUrl}}/api/v1/relatorios/clientes/resumo
+
+### CSV export
+GET {{baseUrl}}/api/v1/relatorios/clientes/exportar
