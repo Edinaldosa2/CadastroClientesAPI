@@ -1,9 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <RootNamespace>CadastroCliente.Service</RootNamespace>
+    <AssemblyName>CadastroCliente.Service</AssemblyName>
   </PropertyGroup>
-
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CadastroCliente.Aplicação\CadastroCliente.Aplicação.csproj" />
+    <ProjectReference Include="..\CadastroCliente.Data\CadastroCliente.Data.csproj" />
+    <ProjectReference Include="..\CadastroCliente.Domain\CadastroCliente.Domain.csproj" />
+    <ProjectReference Include="..\Cadastro.CrossCutting\CadastroCliente.CrossCutting.csproj" />
+  </ItemGroup>
 </Project>
