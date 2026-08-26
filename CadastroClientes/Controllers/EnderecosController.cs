@@ -37,7 +37,7 @@ public sealed class EnderecosController : ControllerBase
     public async Task<ActionResult<EnderecoDto>> Criar(Guid clienteId, [FromBody] EnderecoRequest request, CancellationToken cancellationToken)
     {
         var criado = await _service.CriarAsync(clienteId, request, cancellationToken);
-        return CreatedAtAction(nameof(Obter), new { clienteId, enderecoId = criado.Id, version = "1" }, criado);
+        return Created($"/api/v1/clientes/{clienteId}/enderecos/{criado.Id}", criado);
     }
 
     /// <summary>Atualiza um endereço.</summary>

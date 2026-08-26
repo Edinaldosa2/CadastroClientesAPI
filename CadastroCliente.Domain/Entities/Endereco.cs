@@ -47,7 +47,7 @@ public sealed class Endereco : EntityBase
         Cep = cep.Numero;
         Pais = string.IsNullOrWhiteSpace(pais) ? "Brasil" : pais.Trim();
         Principal = principal;
-        CriadoEm = agora;
+        CriadoEm = agora.UtcDateTime;
     }
 
     internal void Atualizar(

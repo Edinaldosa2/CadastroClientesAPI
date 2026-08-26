@@ -38,7 +38,7 @@ public sealed class ContatosController : ControllerBase
     public async Task<ActionResult<ContatoDto>> Criar(Guid clienteId, [FromBody] ContatoRequest request, CancellationToken cancellationToken)
     {
         var criado = await _service.CriarAsync(clienteId, request, cancellationToken);
-        return CreatedAtAction(nameof(Obter), new { clienteId, contatoId = criado.Id, version = "1" }, criado);
+        return Created($"/api/v1/clientes/{clienteId}/contatos/{criado.Id}", criado);
     }
 
     /// <summary>Atualiza um contato.</summary>

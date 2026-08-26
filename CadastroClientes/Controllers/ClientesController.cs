@@ -84,7 +84,7 @@ public sealed class ClientesController : ControllerBase
     public async Task<ActionResult<ClienteDto>> Criar([FromBody] CriarClienteRequest request, CancellationToken cancellationToken)
     {
         var criado = await _service.CriarAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(ObterPorId), new { id = criado.Id, version = "1" }, criado);
+        return Created($"/api/v1/clientes/{criado.Id}", criado);
     }
 
     /// <summary>Substitui os dados cadastrais do cliente.</summary>

@@ -56,6 +56,7 @@ public sealed class EnderecoService : IEnderecoAppService
             request.Pais,
             request.Principal,
             _clock.UtcNow);
+        _unitOfWork.RegisterNew(endereco);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return ClienteMapper.ToDto(endereco);
     }
