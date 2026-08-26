@@ -1,0 +1,21 @@
+name: ci
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Restore
+        run: dotnet restore CadastroClientes.sln
+      - name: Build
+        run: dotnet build CadastroClientes.sln -c Release --no-restore
+      - name: Test with coverage
+        run: dotnet test CadastroClientes.sln -c Release --no-build --collect:"XPlat Code Coverage" --results-directory TestResults
