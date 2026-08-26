@@ -1,12 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 
-namespace CadastroCliente.Data.Context
+namespace CadastroCliente.Data.Context;
+
+public sealed class ContextFactory : IDesignTimeDbContextFactory<CadastroClienteContext>
 {
-    internal class ContextFactory
+    public CadastroClienteContext CreateDbContext(string[] args)
     {
+        var options = new DbContextOptionsBuilder<CadastroClienteContext>()
+            .UseSqlite("Data Source=cadastro-clientes.db")
+            .Options;
+
+        return new CadastroClienteContext(options);
     }
 }
