@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <Company>Edinaldosa2</Company>
+    <Authors>Edinaldo Sá</Authors>
+    <NeutralLanguage>pt-BR</NeutralLanguage>
+  </PropertyGroup>
+</Project>
