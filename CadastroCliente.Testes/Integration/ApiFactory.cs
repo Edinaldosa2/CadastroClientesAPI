@@ -51,6 +51,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     public HttpClient CreateLeitorClient() => CreateAuthenticatedClient("leitor", "leitor-dev");
 
+    public HttpClient CreateAdminClient() => CreateAuthenticatedClient("admin", "admin-dev");
+
     public HttpClient CreateAuthenticatedClient(string usuario, string senha)
     {
         var client = CreateAnonymousClient();

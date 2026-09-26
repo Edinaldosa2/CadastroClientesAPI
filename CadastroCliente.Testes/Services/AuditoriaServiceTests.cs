@@ -44,11 +44,47 @@ public class AuditoriaServiceTests
         gravado.CorrelationId.Should().Be("trace-1");
     }
 
+    [Fact]
+    public async Task Listar_global_pagina_auditoria()
+    {
+        var clientes = new Mock<IClienteRepository>();
+        var auditoria = new Mock<IAuditoriaRepository>();
+        auditoria.Setup(x => x.ListarAsync(1, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PagedResult<AuditoriaItem>(
+                new[]
+                {
+                    new AuditoriaItem
+                    {
+                        Id = Guid.NewGuid(),
+                        ClienteId = Guid.NewGuid(),
+                        Tipo = "cliente.criado",
+                        Descricao = "Cliente criado",
+                        Usuario = "admin",
+                        OcorridoEm = DateTimeOffset.UtcNow
+                    }
+                }, 1, 20, 1));
+
+        var service = new AuditoriaService(clientes.Object, auditoria.Object);
+        var pagina = await service.ListarGlobalAsync(1, 20);
+
+        pagina.Total.Should().Be(1);
+        pagina.Itens.Should().ContainSingle(x => x.Tipo == "cliente.criado" && x.Usuario == "admin");
+    }
+
     private sealed class UsuarioFixo : ICurrentUser
     {
-        public UsuarioFixo(string usuario) => Usuario = usuario;
+        public UsuarioFixo(string usuario, params string[] roles)
+        {
+            Usuario = usuario;
+            Roles = roles.Length == 0 ? new[] { Perfis.Escrita, Perfis.Leitura } : roles;
+        }
+
         public bool Autenticado => true;
         public string? Usuario { get; }
+        public IReadOnlyCollection<string> Roles { get; }
+        public bool IsAdmin => Roles.Contains(Perfis.Admin, StringComparer.OrdinalIgnoreCase);
+        public bool PodeEscrever => IsAdmin || Roles.Contains(Perfis.Escrita, StringComparer.OrdinalIgnoreCase);
+        public bool PodeLer => PodeEscrever || Roles.Contains(Perfis.Leitura, StringComparer.OrdinalIgnoreCase);
     }
 
     private sealed class CorrelacaoFixa : ICorrelationContext

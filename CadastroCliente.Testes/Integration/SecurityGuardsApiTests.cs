@@ -152,10 +152,10 @@ public class SecurityGuardsApiTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Reset_de_demonstracao_funciona_fora_de_producao()
+    public async Task Reset_de_demonstracao_e_exclusivo_do_admin()
     {
-        var reset = await _editor.PostAsync("/api/v1/dev/reset", null);
-        reset.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await _editor.PostAsync("/api/v1/dev/reset", null)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await _leitor.PostAsync("/api/v1/dev/reset", null)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]

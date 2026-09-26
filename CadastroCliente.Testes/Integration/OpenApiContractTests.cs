@@ -33,6 +33,8 @@ public class OpenApiContractTests : IClassFixture<ApiFactory>
         paths.TryGetProperty("/api/v1/relatorios/clientes/resumo", out _).Should().BeTrue();
         paths.TryGetProperty("/api/v1/relatorios/clientes/exportar", out _).Should().BeTrue();
         paths.TryGetProperty("/api/v1/dev/reset", out _).Should().BeTrue();
+        paths.TryGetProperty("/api/v1/admin/usuarios", out _).Should().BeTrue();
+        paths.TryGetProperty("/api/v1/admin/auditoria", out _).Should().BeTrue();
 
         var clientes = paths.GetProperty("/api/v1/clientes");
         clientes.TryGetProperty("get", out _).Should().BeTrue();
