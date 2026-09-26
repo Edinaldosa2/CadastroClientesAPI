@@ -1,4 +1,5 @@
 using CadastroCliente.Domain.Enums;
+using CadastroCliente.Domain.Events;
 using CadastroCliente.Domain.Exceptions;
 using CadastroCliente.Domain.ValueObjects;
 
@@ -46,6 +47,7 @@ public sealed class Cliente : EntityBase
         };
 
         cliente.AplicarDados(nome, tipoPessoa, documento, nomeFantasia, inscricaoEstadual, dataNascimento, observacoes, agora);
+        cliente.RegistrarEvento(new ClienteCriado(cliente.Id, cliente.Nome, cliente.Documento, agora));
         return cliente;
     }
 
@@ -59,6 +61,7 @@ public sealed class Cliente : EntityBase
     {
         GarantirAtivoParaEdicao();
         AplicarDados(nome, TipoPessoa, Documento, nomeFantasia, inscricaoEstadual, dataNascimento, observacoes, agora);
+        RegistrarEvento(new ClienteAtualizado(Id, Nome, agora));
     }
 
     public void AtualizarParcial(
@@ -81,6 +84,7 @@ public sealed class Cliente : EntityBase
             atualizarNascimento ? dataNascimento : DataNascimento,
             atualizarObservacoes ? observacoes : Observacoes,
             agora);
+        RegistrarEvento(new ClienteAtualizado(Id, Nome, agora));
     }
 
     public void Ativar(DateTimeOffset agora, string? motivo = null)
@@ -97,9 +101,11 @@ public sealed class Cliente : EntityBase
         }
 
         var vinhaBloqueado = Status == StatusCliente.Bloqueado;
+        var anterior = Status;
         Status = StatusCliente.Ativo;
         MotivoStatus = vinhaBloqueado ? NormalizarMotivo(motivo) : null;
         Tocar(agora);
+        RegistrarEvento(new ClienteStatusAlterado(Id, anterior, Status, MotivoStatus, agora));
     }
 
     public void Inativar(string? motivo, DateTimeOffset agora)
@@ -110,9 +116,11 @@ public sealed class Cliente : EntityBase
             throw new BusinessRuleException("status", "Cliente já está inativo.");
         }
 
+        var anterior = Status;
         Status = StatusCliente.Inativo;
         MotivoStatus = NormalizarMotivo(motivo);
         Tocar(agora);
+        RegistrarEvento(new ClienteStatusAlterado(Id, anterior, Status, MotivoStatus, agora));
     }
 
     public void Bloquear(string? motivo, DateTimeOffset agora)
@@ -123,9 +131,11 @@ public sealed class Cliente : EntityBase
             throw new BusinessRuleException("status", "Cliente já está bloqueado.");
         }
 
+        var anterior = Status;
         Status = StatusCliente.Bloqueado;
         MotivoStatus = NormalizarMotivo(motivo);
         Tocar(agora);
+        RegistrarEvento(new ClienteStatusAlterado(Id, anterior, Status, MotivoStatus, agora));
     }
 
     public void Excluir(DateTimeOffset agora)
@@ -139,6 +149,7 @@ public sealed class Cliente : EntityBase
         ExcluidoEm = agora;
         Status = StatusCliente.Inativo;
         Tocar(agora);
+        RegistrarEvento(new ClienteExcluido(Id, agora));
     }
 
     public void Restaurar(DateTimeOffset agora)
@@ -152,6 +163,7 @@ public sealed class Cliente : EntityBase
         ExcluidoEm = null;
         Status = StatusCliente.Ativo;
         Tocar(agora);
+        RegistrarEvento(new ClienteRestaurado(Id, agora));
     }
 
     public Endereco AdicionarEndereco(

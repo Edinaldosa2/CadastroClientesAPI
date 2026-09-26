@@ -1,6 +1,7 @@
 ﻿using CadastroCliente.Data.Entities;
 using CadastroCliente.Data.Mapping;
 using CadastroCliente.Domain.Entities;
+using CadastroCliente.Domain.Events;
 using CadastroCliente.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,7 @@ public sealed class CadastroClienteContext : DbContext, IUnitOfWork
     public DbSet<Endereco> Enderecos => Set<Endereco>();
     public DbSet<Contato> Contatos => Set<Contato>();
     public DbSet<IdempotencyRecord> IdempotencyKeys => Set<IdempotencyRecord>();
+    public DbSet<AuditoriaRecord> Auditorias => Set<AuditoriaRecord>();
 
     public void RegisterNew<T>(T entity) where T : EntityBase
     {
@@ -29,12 +31,18 @@ public sealed class CadastroClienteContext : DbContext, IUnitOfWork
         entry.State = EntityState.Added;
     }
 
+    public IReadOnlyList<IDomainEvent> ColetarEventos()
+        => ChangeTracker.Entries<EntityBase>()
+            .SelectMany(entry => entry.Entity.ConsumirEventos())
+            .ToList();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new ClienteMap());
         modelBuilder.ApplyConfiguration(new EnderecoMap());
         modelBuilder.ApplyConfiguration(new ContatoMap());
         modelBuilder.ApplyConfiguration(new IdempotencyMap());
+        modelBuilder.ApplyConfiguration(new AuditoriaMap());
         base.OnModelCreating(modelBuilder);
     }
 

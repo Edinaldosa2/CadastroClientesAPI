@@ -22,10 +22,12 @@ namespace CadastroClientes.Controllers;
 public sealed class ClientesController : ControllerBase
 {
     private readonly IClienteAppService _service;
+    private readonly IAuditoriaAppService _auditoria;
 
-    public ClientesController(IClienteAppService service)
+    public ClientesController(IClienteAppService service, IAuditoriaAppService auditoria)
     {
         _service = service;
+        _auditoria = auditoria;
     }
 
     /// <summary>Lista clientes com paginação, cursor, filtros e ordenação.</summary>
@@ -101,6 +103,16 @@ public sealed class ClientesController : ControllerBase
         var etag = EtagHelper.From(dto);
         Response.Headers.ETag = etag;
         return Ok(dto);
+    }
+
+    /// <summary>Lista a trilha de auditoria do cliente.</summary>
+    [HttpGet("{id:guid}/auditoria")]
+    [ProducesResponseType(typeof(IReadOnlyList<AuditoriaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<AuditoriaDto>>> Auditoria(Guid id, CancellationToken cancellationToken)
+    {
+        GarantirId(id);
+        return Ok(await _auditoria.ListarPorClienteAsync(id, cancellationToken));
     }
 
     /// <summary>Obtém um cliente pelo CPF ou CNPJ, com ou sem máscara.</summary>

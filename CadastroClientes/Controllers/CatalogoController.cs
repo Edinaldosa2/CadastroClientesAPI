@@ -28,6 +28,7 @@ public sealed class CatalogoController : ControllerBase
             {
                 clientes = "/api/v1/clientes",
                 clientePorDocumento = "/api/v1/clientes/documento/{documento}",
+                auditoria = "/api/v1/clientes/{id}/auditoria",
                 enderecos = "/api/v1/clientes/{id}/enderecos",
                 contatos = "/api/v1/clientes/{id}/contatos",
                 relatorioResumo = "/api/v1/relatorios/clientes/resumo",

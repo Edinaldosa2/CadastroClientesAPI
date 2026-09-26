@@ -33,6 +33,7 @@ public sealed class DevController : ControllerBase
         }
 
         await _db.Database.EnsureCreatedAsync(cancellationToken);
+        _db.Auditorias.RemoveRange(_db.Auditorias);
         _db.Contatos.RemoveRange(_db.Contatos);
         _db.Enderecos.RemoveRange(_db.Enderecos);
         _db.Clientes.RemoveRange(_db.Clientes.IgnoreQueryFilters());

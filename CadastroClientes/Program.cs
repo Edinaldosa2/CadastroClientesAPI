@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
+using CadastroCliente.Aplicacao.Abstractions;
 using CadastroCliente.Data.Context;
 using CadastroCliente.Data.Seed;
 using CadastroCliente.Service.DI;
@@ -32,6 +33,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.AddScoped<ICorrelationContext, HttpCorrelationContext>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
