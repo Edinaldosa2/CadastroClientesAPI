@@ -6,4 +6,5 @@ public interface IAuditoriaRepository
 {
     Task AddAsync(AuditoriaItem item, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AuditoriaItem>> ListarPorClienteAsync(Guid clienteId, CancellationToken cancellationToken = default);
+    Task<PagedResult<AuditoriaItem>> ListarAsync(int pagina, int tamanhoPagina, CancellationToken cancellationToken = default);
 }

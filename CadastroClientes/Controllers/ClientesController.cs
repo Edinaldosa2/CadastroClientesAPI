@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using CadastroCliente.Aplicacao.Abstractions;
 using CadastroCliente.Aplicacao.DTOs;
 using CadastroCliente.Aplicacao.Interfaces;
 using CadastroCliente.Domain.Enums;
@@ -12,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CadastroClientes.Controllers;
 
 [ApiController]
-[Authorize(Roles = "leitura,escrita")]
+[Authorize(Policy = AppPolicies.Leitura)]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/clientes")]
 [Produces("application/json")]
@@ -51,7 +52,7 @@ public sealed class ClientesController : ControllerBase
         [FromQuery] bool descendente = false,
         CancellationToken cancellationToken = default)
     {
-        if (incluirExcluidos && !User.IsInRole("escrita"))
+        if (incluirExcluidos && !User.IsInRole(Perfis.Escrita) && !User.IsInRole(Perfis.Admin))
         {
             return Forbid();
         }
@@ -124,7 +125,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Cria um novo cliente. Envie Idempotency-Key para repetir o POST com segurança.</summary>
     [HttpPost]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [Idempotent]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -136,12 +137,12 @@ public sealed class ClientesController : ControllerBase
     }
 
     [HttpDelete]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     public IActionResult ExcluirColecao() => StatusCode(StatusCodes.Status405MethodNotAllowed);
 
     /// <summary>Substitui os dados cadastrais do cliente.</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ClienteDto>> Atualizar(Guid id, [FromBody] AtualizarClienteRequest request, CancellationToken cancellationToken)
@@ -155,7 +156,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Atualiza parcialmente os dados cadastrais do cliente.</summary>
     [HttpPatch("{id:guid}")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ClienteDto>> Patch(Guid id, [FromBody] PatchClienteRequest request, CancellationToken cancellationToken)
@@ -169,7 +170,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Exclui logicamente um cliente.</summary>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Excluir(Guid id, CancellationToken cancellationToken)
@@ -181,7 +182,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Reativa um cliente excluído.</summary>
     [HttpPost("{id:guid}/restaurar")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ClienteDto>> Restaurar(Guid id, CancellationToken cancellationToken)
     {
@@ -191,7 +192,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Ativa um cliente inativo ou bloqueado. Bloqueado exige motivo.</summary>
     [HttpPost("{id:guid}/ativar")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ClienteDto>> Ativar(Guid id, [FromBody] AlterarStatusRequest? request, CancellationToken cancellationToken)
     {
@@ -201,7 +202,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Inativa um cliente ativo.</summary>
     [HttpPost("{id:guid}/inativar")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ClienteDto>> Inativar(Guid id, [FromBody] AlterarStatusRequest? request, CancellationToken cancellationToken)
     {
@@ -211,7 +212,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Bloqueia um cliente. Cadastro deixa de aceitar edições.</summary>
     [HttpPost("{id:guid}/bloquear")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ClienteDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ClienteDto>> Bloquear(Guid id, [FromBody] AlterarStatusRequest? request, CancellationToken cancellationToken)
     {

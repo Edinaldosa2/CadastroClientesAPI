@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using CadastroCliente.Aplicacao.Abstractions;
 using CadastroCliente.Aplicacao.DTOs;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -28,10 +29,7 @@ public sealed class TokenService
             throw new UnauthorizedAccessException("Credenciais inválidas.");
         }
 
-        var roles = user.Perfil.Equals("escrita", StringComparison.OrdinalIgnoreCase)
-            ? new[] { "leitura", "escrita" }
-            : new[] { "leitura" };
-
+        var roles = RolesDoPerfil(user.Perfil);
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Usuario),
@@ -53,5 +51,25 @@ public sealed class TokenService
             ExpiresIn = _jwt.ExpiresMinutes * 60,
             Perfil = user.Perfil
         };
+    }
+
+    public IReadOnlyList<UsuarioAdminDto> ListarUsuarios()
+        => _users
+            .Select(u => new UsuarioAdminDto { Usuario = u.Usuario, Perfil = u.Perfil })
+            .ToList();
+
+    public static string[] RolesDoPerfil(string perfil)
+    {
+        if (perfil.Equals(Perfis.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { Perfis.Admin, Perfis.Escrita, Perfis.Leitura };
+        }
+
+        if (perfil.Equals(Perfis.Escrita, StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { Perfis.Leitura, Perfis.Escrita };
+        }
+
+        return new[] { Perfis.Leitura };
     }
 }

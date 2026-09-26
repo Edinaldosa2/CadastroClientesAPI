@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using CadastroCliente.Data.Context;
 using CadastroCliente.Data.Seed;
+using CadastroClientes.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,7 @@ namespace CadastroClientes.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Authorize(Roles = "escrita")]
+[Authorize(Policy = AppPolicies.Admin)]
 [Route("api/v{version:apiVersion}/dev")]
 [Produces("application/json")]
 public sealed class DevController : ControllerBase
@@ -23,7 +24,7 @@ public sealed class DevController : ControllerBase
         _environment = environment;
     }
 
-    /// <summary>Recria o banco de demonstração. Bloqueado fora de Development/Testing.</summary>
+    /// <summary>Recria o banco de demonstração. Exclusivo do perfil admin e bloqueado em Production.</summary>
     [HttpPost("reset")]
     public async Task<IActionResult> Reset(CancellationToken cancellationToken)
     {

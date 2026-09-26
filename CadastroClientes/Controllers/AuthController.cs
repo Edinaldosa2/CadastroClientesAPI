@@ -20,7 +20,7 @@ public sealed class AuthController : ControllerBase
         _tokens = tokens;
     }
 
-    /// <summary>Emite um JWT com perfil leitura ou escrita.</summary>
+    /// <summary>Emite um JWT com perfil admin, escrita ou leitura.</summary>
     [HttpPost("token")]
     [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

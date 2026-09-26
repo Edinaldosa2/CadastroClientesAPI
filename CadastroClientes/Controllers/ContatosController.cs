@@ -1,13 +1,14 @@
 using Asp.Versioning;
 using CadastroCliente.Aplicacao.DTOs;
 using CadastroCliente.Aplicacao.Interfaces;
+using CadastroClientes.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CadastroClientes.Controllers;
 
 [ApiController]
-[Authorize(Roles = "leitura,escrita")]
+[Authorize(Policy = AppPolicies.Leitura)]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/clientes/{clienteId:guid}/contatos")]
 [Produces("application/json")]
@@ -35,7 +36,7 @@ public sealed class ContatosController : ControllerBase
 
     /// <summary>Adiciona um contato (e-mail, telefone, celular ou WhatsApp).</summary>
     [HttpPost]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ContatoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ContatoDto>> Criar(Guid clienteId, [FromBody] ContatoRequest request, CancellationToken cancellationToken)
@@ -46,14 +47,14 @@ public sealed class ContatosController : ControllerBase
 
     /// <summary>Atualiza um contato.</summary>
     [HttpPut("{contatoId:guid}")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(ContatoDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ContatoDto>> Atualizar(Guid clienteId, Guid contatoId, [FromBody] ContatoRequest request, CancellationToken cancellationToken)
         => Ok(await _service.AtualizarAsync(clienteId, contatoId, request, cancellationToken));
 
     /// <summary>Remove um contato.</summary>
     [HttpDelete("{contatoId:guid}")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Remover(Guid clienteId, Guid contatoId, CancellationToken cancellationToken)
     {

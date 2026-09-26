@@ -29,4 +29,29 @@ public sealed class HttpCurrentUser : ICurrentUser
                    ?? user.Identity?.Name;
         }
     }
+
+    public IReadOnlyCollection<string> Roles
+    {
+        get
+        {
+            var user = _http.HttpContext?.User;
+            if (user is null)
+            {
+                return Array.Empty<string>();
+            }
+
+            return user.FindAll(ClaimTypes.Role)
+                .Select(claim => claim.Value)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+    }
+
+    public bool IsAdmin => Possui(Perfis.Admin);
+
+    public bool PodeEscrever => IsAdmin || Possui(Perfis.Escrita);
+
+    public bool PodeLer => PodeEscrever || Possui(Perfis.Leitura);
+
+    private bool Possui(string perfil) => _http.HttpContext?.User.IsInRole(perfil) == true;
 }

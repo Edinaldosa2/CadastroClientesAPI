@@ -83,7 +83,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key))
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(AppPolicies.Configure);
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -108,7 +108,7 @@ builder.Services.AddSwaggerGen(options =>
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT no header Authorization: Bearer {token}. Perfis: leitura e escrita.",
+        Description = "JWT no header Authorization: Bearer {token}. Perfis: admin, escrita e leitura.",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,

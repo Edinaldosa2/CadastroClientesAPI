@@ -1,13 +1,14 @@
 using Asp.Versioning;
 using CadastroCliente.Aplicacao.DTOs;
 using CadastroCliente.Aplicacao.Interfaces;
+using CadastroClientes.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CadastroClientes.Controllers;
 
 [ApiController]
-[Authorize(Roles = "leitura,escrita")]
+[Authorize(Policy = AppPolicies.Leitura)]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/clientes/{clienteId:guid}/enderecos")]
 [Produces("application/json")]
@@ -35,7 +36,7 @@ public sealed class EnderecosController : ControllerBase
 
     /// <summary>Adiciona um endereço ao cliente.</summary>
     [HttpPost]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(EnderecoDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<EnderecoDto>> Criar(Guid clienteId, [FromBody] EnderecoRequest request, CancellationToken cancellationToken)
     {
@@ -45,21 +46,21 @@ public sealed class EnderecosController : ControllerBase
 
     /// <summary>Atualiza um endereço.</summary>
     [HttpPut("{enderecoId:guid}")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(EnderecoDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<EnderecoDto>> Atualizar(Guid clienteId, Guid enderecoId, [FromBody] EnderecoRequest request, CancellationToken cancellationToken)
         => Ok(await _service.AtualizarAsync(clienteId, enderecoId, request, cancellationToken));
 
     /// <summary>Define o endereço como principal.</summary>
     [HttpPatch("{enderecoId:guid}/principal")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(typeof(EnderecoDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<EnderecoDto>> Principal(Guid clienteId, Guid enderecoId, CancellationToken cancellationToken)
         => Ok(await _service.DefinirPrincipalAsync(clienteId, enderecoId, cancellationToken));
 
     /// <summary>Remove um endereço.</summary>
     [HttpDelete("{enderecoId:guid}")]
-    [Authorize(Roles = "escrita")]
+    [Authorize(Policy = AppPolicies.Escrita)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Remover(Guid clienteId, Guid enderecoId, CancellationToken cancellationToken)
     {

@@ -21,7 +21,11 @@ public sealed class CatalogoController : ControllerBase
             nome = "Cadastro de Clientes API",
             versao = "1.0",
             documentacao = "/swagger",
-            autenticacao = "/api/v1/auth/token",
+            autenticacao = new
+            {
+                token = "/api/v1/auth/token",
+                perfis = new[] { "admin", "escrita", "leitura" }
+            },
             saude = new { live = "/health/live", ready = "/health/ready", full = "/health" },
             limites = new { enderecosPorCliente = 10, contatosPorCliente = 15, tamanhoPaginaMaximo = 100 },
             recursos = new
@@ -33,6 +37,8 @@ public sealed class CatalogoController : ControllerBase
                 contatos = "/api/v1/clientes/{id}/contatos",
                 relatorioResumo = "/api/v1/relatorios/clientes/resumo",
                 exportacaoCsv = "/api/v1/relatorios/clientes/exportar",
+                usuariosAdmin = "/api/v1/admin/usuarios",
+                auditoriaGlobal = "/api/v1/admin/auditoria",
                 resetDemonstracao = "/api/v1/dev/reset"
             }
         });
