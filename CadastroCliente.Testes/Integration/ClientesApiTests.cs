@@ -88,7 +88,7 @@ public class ClientesApiTests : IClassFixture<ApiFactory>
         (await _client.PostAsJsonAsync($"/api/v1/clientes/{criado.Id}/inativar", new AlterarStatusRequest { Motivo = "teste" }, Json)).EnsureSuccessStatusCode();
         (await _client.PostAsync($"/api/v1/clientes/{criado.Id}/ativar", null)).EnsureSuccessStatusCode();
         (await _client.PostAsJsonAsync($"/api/v1/clientes/{criado.Id}/bloquear", new AlterarStatusRequest { Motivo = "fraude" }, Json)).EnsureSuccessStatusCode();
-        (await _client.PostAsync($"/api/v1/clientes/{criado.Id}/ativar", null)).EnsureSuccessStatusCode();
+        (await _client.PostAsJsonAsync($"/api/v1/clientes/{criado.Id}/ativar", new AlterarStatusRequest { Motivo = "revisão" }, Json)).EnsureSuccessStatusCode();
 
         (await _client.DeleteAsync($"/api/v1/clientes/{criado.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await _client.GetAsync($"/api/v1/clientes/{criado.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);

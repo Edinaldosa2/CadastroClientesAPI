@@ -120,6 +120,7 @@ public class NestedServicesTests
         var resumo = await _relatorios.ObterResumoAsync();
         resumo.Total.Should().Be(2);
         var csv = await _relatorios.ExportarCsvAsync();
+        csv.Should().StartWith("\uFEFF");
         csv.Should().Contain("Maria Silva");
         csv.Should().Contain("Id;Nome");
     }

@@ -102,6 +102,10 @@ public class ClienteServiceTests
         await _service.AtivarAsync(cliente.Id);
         await _service.BloquearAsync(cliente.Id, new AlterarStatusRequest { Motivo = "risco" });
         cliente.Status.Should().Be(StatusCliente.Bloqueado);
+        var desbloqueio = () => _service.AtivarAsync(cliente.Id);
+        await desbloqueio.Should().ThrowAsync<BusinessRuleException>().Where(e => e.Code == "motivo_obrigatorio");
+        await _service.AtivarAsync(cliente.Id, new AlterarStatusRequest { Motivo = "revisão" });
+        cliente.Status.Should().Be(StatusCliente.Ativo);
     }
 
     [Fact]
@@ -110,10 +114,16 @@ public class ClienteServiceTests
         var cliente = Cliente.Criar("Maria Silva", TipoPessoa.Fisica, "52998224725", null, null, null, null, _clock.Object.UtcNow);
         _repo.Setup(x => x.GetByIdAsync(cliente.Id, false, It.IsAny<CancellationToken>())).ReturnsAsync(cliente);
         _repo.Setup(x => x.GetByIdAsync(cliente.Id, true, It.IsAny<CancellationToken>())).ReturnsAsync(cliente);
+        _repo.Setup(x => x.ExistsDocumentoAtivoAsync(cliente.Documento, cliente.Id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         await _service.ExcluirAsync(cliente.Id);
         cliente.Excluido.Should().BeTrue();
         await _service.RestaurarAsync(cliente.Id);
         cliente.Excluido.Should().BeFalse();
+
+        cliente.Excluir(_clock.Object.UtcNow);
+        _repo.Setup(x => x.ExistsDocumentoAtivoAsync(cliente.Documento, cliente.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var conflito = () => _service.RestaurarAsync(cliente.Id);
+        await conflito.Should().ThrowAsync<ConflictException>();
     }
 
     [Fact]
@@ -127,5 +137,8 @@ public class ClienteServiceTests
         patched.Nome.Should().Be("Maria P.");
         patched.Observacoes.Should().Be("x");
         (await _service.ObterPorDocumentoAsync("52998224725")).Id.Should().Be(cliente.Id);
+
+        var documento = () => _service.PatchAsync(cliente.Id, new PatchClienteRequest { Documento = "11144477735" });
+        await documento.Should().ThrowAsync<BusinessRuleException>().Where(e => e.Code == "documento_imutavel");
     }
 }

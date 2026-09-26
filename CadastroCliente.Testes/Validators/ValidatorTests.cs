@@ -35,6 +35,21 @@ public class ValidatorTests
     }
 
     [Fact]
+    public void CriarCliente_rejeita_id_fornecido_pelo_cliente()
+    {
+        var validator = new CriarClienteRequestValidator();
+        var result = validator.Validate(new CriarClienteRequest
+        {
+            Id = Guid.NewGuid(),
+            Nome = "Maria Silva",
+            TipoPessoa = TipoPessoa.Fisica,
+            Documento = "52998224725"
+        });
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Id");
+    }
+
+    [Fact]
     public void Endereco_e_contato_validators()
     {
         new EnderecoRequestValidator().Validate(new EnderecoRequest

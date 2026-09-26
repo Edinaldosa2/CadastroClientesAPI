@@ -34,5 +34,8 @@ public class MapperAndExceptionTests
         ex.Code.Should().Be("validation");
         new ConflictException("x").Code.Should().Be("conflict");
         new NotFoundException("Cliente", 1).Message.Should().Contain("Cliente");
+        new PreconditionFailedException("etag").Code.Should().Be("etag_conflito");
+        new BusinessRuleException("documento", "CPF inválido.").Code.Should().Be("cpf_invalido");
+        new BusinessRuleException("status", "Cliente bloqueado não pode ser editado.").Code.Should().Be("cliente_bloqueado");
     }
 }

@@ -27,7 +27,7 @@ public class DocumentoTests
     public void Cpf_invalido_lanca(string cpf)
     {
         var act = () => Documento.Criar(cpf, TipoPessoa.Fisica);
-        act.Should().Throw<BusinessRuleException>().Which.Code.Should().Be("validation");
+        act.Should().Throw<BusinessRuleException>().Which.Code.Should().Be("cpf_invalido");
         Documento.EhCpfValido(cpf).Should().BeFalse();
     }
 

@@ -53,9 +53,12 @@ public class ClienteTests
         cliente.Bloquear("risco", Agora);
         cliente.Status.Should().Be(StatusCliente.Bloqueado);
         var editar = () => cliente.Atualizar("Outro Nome", null, null, null, null, Agora);
-        editar.Should().Throw<BusinessRuleException>();
-        cliente.Ativar(Agora);
+        editar.Should().Throw<BusinessRuleException>().Which.Code.Should().Be("cliente_bloqueado");
+        var semMotivo = () => cliente.Ativar(Agora);
+        semMotivo.Should().Throw<BusinessRuleException>().Which.Code.Should().Be("motivo_obrigatorio");
+        cliente.Ativar(Agora, "desbloqueio auditado");
         cliente.Status.Should().Be(StatusCliente.Ativo);
+        cliente.MotivoStatus.Should().Be("desbloqueio auditado");
     }
 
     [Fact]

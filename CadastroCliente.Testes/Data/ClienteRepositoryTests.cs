@@ -59,9 +59,10 @@ public class ClienteRepositoryTests : IDisposable
         var cliente = Cliente.Criar("Novo Cliente", TipoPessoa.Fisica, "11144477735", null, null, null, null, DateTimeOffset.UtcNow);
         await _repository.AddAsync(cliente);
         await _context.SaveChangesAsync();
-        _repository.Remove(cliente);
-        await _context.SaveChangesAsync();
-        (await _repository.GetByIdAsync(cliente.Id, true)).Should().BeNull();
+        var remover = () => _repository.Remove(cliente);
+        remover.Should().Throw<InvalidOperationException>().WithMessage("*exclusão lógica*");
+        (await _repository.GetByIdAsync(cliente.Id)).Should().NotBeNull();
+        (await _repository.ExistsDocumentoAtivoAsync(cliente.Documento)).Should().BeTrue();
     }
 
     public void Dispose()

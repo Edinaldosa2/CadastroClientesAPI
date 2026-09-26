@@ -14,6 +14,8 @@ public class HelperTests
         DocumentoHelper.EhValido("11222333000181", TipoPessoa.Juridica).Should().BeTrue();
         DocumentoHelper.Formatado("52998224725", TipoPessoa.Fisica).Should().Be("529.982.247-25");
         DocumentoHelper.SomenteDigitos("529.982.247-25").Should().Be("52998224725");
+        DocumentoHelper.Mascarado("52998224725").Should().Be("529.***.***-25");
+        DocumentoHelper.Mascarado("11222333000181").Should().Be("11.***.***/****-81");
     }
 
     [Fact]
