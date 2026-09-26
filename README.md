@@ -25,6 +25,7 @@ Create a person or company, attach addresses and contacts, search with paginatio
 | **Idempotency** | Persisted keys + body hash; mismatch returns `409` |
 | **Errors** | RFC 7807 `code` (`cpf_invalido`, `documento_imutavel`, `etag_conflito`, …) |
 | **Safety** | Immutable document, no physical delete, unlock reason, production JWT/InMemory guards |
+| **Architecture** | Domain events after save, current user, correlation and persisted audit trail |
 | **Ops** | SQLite file health, demo reset, non-root read-only Docker, CSV UTF-8 BOM |
 
 ---
@@ -169,6 +170,7 @@ Client → /api/v1/clientes  → Application services → Domain rules → SQLit
 | POST | `/api/v1/clientes/{id}/inativar` | Inactivate |
 | POST | `/api/v1/clientes/{id}/bloquear` | Block (edits rejected) |
 | POST | `/api/v1/clientes/{id}/restaurar` | Restore a deleted customer |
+| GET | `/api/v1/clientes/{id}/auditoria` | Domain-event audit trail |
 | GET/POST | `/api/v1/clientes/{id}/enderecos` | List / create addresses |
 | GET/PUT/DELETE | `/api/v1/clientes/{id}/enderecos/{enderecoId}` | Address item |
 | PATCH | `/api/v1/clientes/{id}/enderecos/{enderecoId}/principal` | Set primary address |
@@ -256,10 +258,10 @@ Errors follow [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) Problem Details
 
 ```
 CadastroClientesAPI/
-├── CadastroClientes/              HTTP host, controllers, middleware
-├── CadastroCliente.Aplicação/     DTOs, validators, application contracts
-├── CadastroCliente.Service/       Use-case implementations and DI
-├── CadastroCliente.Domain/        Entities, value objects, rules
+├── CadastroClientes/              HTTP host, controllers, middleware, current user
+├── CadastroCliente.Aplicação/     DTOs, validators, ports, abstractions
+├── CadastroCliente.Service/       Use cases, event dispatcher, unit of work
+├── CadastroCliente.Domain/        Entities, domain events, value objects, rules
 ├── CadastroCliente.Data/          EF Core, mappings, SQLite
 ├── Cadastro.CrossCutting/         CPF/CNPJ/CEP/phone helpers, clock
 ├── CadastroCliente.Testes/        Unit and integration tests

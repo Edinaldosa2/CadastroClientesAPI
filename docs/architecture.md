@@ -4,22 +4,27 @@ CadastroClientes is a layered .NET 8 API. Dependencies point inward: the HTTP ho
 
 ```
 CadastroClientes (API)
-        │
+        │  JWT, ICurrentUser, correlation
         ▼
-CadastroCliente.Service  ──► CadastroCliente.Aplicacao (DTOs, validators, ports)
-        │
-        ├── CadastroCliente.Data (EF Core / SQLite)
-        ├── CadastroCliente.Domain (entities, value objects, rules)
-        └── Cadastro.CrossCutting (document helpers, clock)
+CadastroCliente.Service
+        │  use cases + domain event dispatcher
+        ├── CadastroCliente.Aplicacao   ports, DTOs, validators
+        ├── CadastroCliente.Data        EF Core / SQLite + auditoria
+        ├── CadastroCliente.Domain      entities, events, value objects
+        └── Cadastro.CrossCutting       CPF/CNPJ/CEP/phone, clock
 ```
 
 ## Data flow
 
 1. Controller binds JSON to a request DTO and enforces JWT roles.
 2. Application service runs FluentValidation.
-3. Domain entity enforces invariants (CPF/CNPJ, status, nested limits, unlock reason).
-4. Repository + unit of work persist SQLite. Physical delete of a customer throws.
+3. Domain entity enforces invariants (CPF/CNPJ, status, nested limits, unlock reason) and raises domain events.
+4. `DispatchingUnitOfWork` persists SQLite, then dispatches events. A handler writes the audit trail. Physical delete of a customer throws.
 5. Mapper returns response DTOs. Failures become RFC 7807 Problem Details with `code`.
+
+## Domain events
+
+`Cliente` raises in-process events on create, update, status change, soft delete and restore. After `SaveChanges`, `DomainEventDispatcher` notifies handlers. The first handler persists `auditoria` with the authenticated user and correlation id. Extra handlers can be registered without changing the controllers.
 
 ## Extension points
 
@@ -28,7 +33,8 @@ CadastroCliente.Service  ──► CadastroCliente.Aplicacao (DTOs, validators, 
 | SQL Server / PostgreSQL | `AddDbContext` in `Program.cs` and the matching EF provider package |
 | Extra customer fields | `Cliente` entity + mapping + DTO + validator |
 | Authentication users | `Users` and `Jwt` in configuration; `TokenService` |
-| Outbox / events | Raise from `Cliente` methods and dispatch after `SaveChangesAsync` |
+| Extra event handler | Implement `IDomainEventHandler` and register it in `AddCadastroServices` |
+| Outbox / message bus | Replace the in-process dispatcher with a queued publisher |
 | Multi-tenant | Add `TenantId` to `EntityBase` and a global query filter |
 
 ## Persistence notes

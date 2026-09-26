@@ -96,6 +96,10 @@ Content-Type: application/json
   "motivo": "revisão cadastral"
 }
 
+### Audit trail
+GET {{baseUrl}}/api/v1/clientes/{{id}}/auditoria
+Authorization: {{token}}
+
 ### Summary report
 GET {{baseUrl}}/api/v1/relatorios/clientes/resumo
 Authorization: {{token}}

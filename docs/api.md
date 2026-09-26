@@ -81,6 +81,10 @@ Omitted fields stay unchanged. To clear `observacoes` or `dataNascimento`, set t
 
 Unlocking a blocked customer requires `{ "motivo": "..." }`. Soft delete is logical only; `ClienteRepository.Remove` throws. Restore is blocked when another active customer already owns the document.
 
+## Audit
+
+`GET /api/v1/clientes/{id}/auditoria` — chronological trail (`cliente.criado`, `cliente.atualizado`, `cliente.status_alterado`, `cliente.excluido`, `cliente.restaurado`) with `usuario` and `correlationId`. Soft-deleted customers remain readable here.
+
 ## Reports
 
 - `GET /api/v1/relatorios/clientes/resumo` — totals by status, person type and UF of the principal address (leitura).
