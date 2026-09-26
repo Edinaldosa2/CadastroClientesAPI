@@ -36,6 +36,7 @@ public sealed class RelatorioService : IRelatorioAppService
     {
         var pagina = await _repository.SearchAsync(new ClienteFiltro { Pagina = 1, TamanhoPagina = 100 }, cancellationToken);
         var sb = new StringBuilder();
+        sb.Append('\uFEFF');
         sb.AppendLine("Id;Nome;TipoPessoa;Documento;Status;Cidade;Uf;CriadoEm");
         foreach (var cliente in pagina.Itens)
         {

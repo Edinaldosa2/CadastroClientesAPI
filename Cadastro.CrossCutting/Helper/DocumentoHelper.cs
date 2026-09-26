@@ -25,4 +25,20 @@ public static class DocumentoHelper
             return valor;
         }
     }
+
+    public static string Mascarado(string? valor)
+    {
+        var digits = SomenteDigitos(valor);
+        if (digits.Length == 11)
+        {
+            return $"{digits[..3]}.***.***-{digits[^2..]}";
+        }
+
+        if (digits.Length == 14)
+        {
+            return $"{digits[..2]}.***.***/****-{digits[^2..]}";
+        }
+
+        return string.IsNullOrEmpty(digits) ? string.Empty : "***";
+    }
 }

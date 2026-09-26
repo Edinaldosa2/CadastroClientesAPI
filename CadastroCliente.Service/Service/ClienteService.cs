@@ -36,7 +36,7 @@ public sealed class ClienteService : IClienteAppService
     {
         var pagina = await _repository.SearchAsync(filtro, cancellationToken);
         var itens = pagina.Itens.Select(ClienteMapper.ToListItem).ToList();
-        return new PagedResult<ClienteListItemDto>(itens, pagina.Pagina, pagina.TamanhoPagina, pagina.Total);
+        return new PagedResult<ClienteListItemDto>(itens, pagina.Pagina, pagina.TamanhoPagina, pagina.Total, pagina.ProximoCursor);
     }
 
     public async Task<ClienteDto> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -109,6 +109,12 @@ public sealed class ClienteService : IClienteAppService
 
     public async Task<ClienteDto> PatchAsync(Guid id, PatchClienteRequest request, CancellationToken cancellationToken = default)
     {
+        if (!string.IsNullOrWhiteSpace(request.Documento)
+            || (request.Extra?.Keys.Any(k => k.Equals("documento", StringComparison.OrdinalIgnoreCase)) ?? false))
+        {
+            throw new BusinessRuleException("documento_imutavel", "documento", "Documento não pode ser alterado.");
+        }
+
         var cliente = await ObterCliente(id, cancellationToken);
         cliente.AtualizarParcial(
             request.Nome,
@@ -134,15 +140,20 @@ public sealed class ClienteService : IClienteAppService
     {
         var cliente = await _repository.GetByIdAsync(id, incluirExcluidos: true, cancellationToken)
                       ?? throw new NotFoundException("Cliente", id);
+        if (await _repository.ExistsDocumentoAtivoAsync(cliente.Documento, cliente.Id, cancellationToken))
+        {
+            throw new ConflictException("Já existe um cliente ativo com este documento. Restore bloqueado.");
+        }
+
         cliente.Restaurar(_clock.UtcNow);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return ClienteMapper.ToDto(cliente);
     }
 
-    public async Task<ClienteDto> AtivarAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ClienteDto> AtivarAsync(Guid id, AlterarStatusRequest? request = null, CancellationToken cancellationToken = default)
     {
         var cliente = await ObterCliente(id, cancellationToken);
-        cliente.Ativar(_clock.UtcNow);
+        cliente.Ativar(_clock.UtcNow, request?.Motivo);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return ClienteMapper.ToDto(cliente);
     }

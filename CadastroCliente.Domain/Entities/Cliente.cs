@@ -83,7 +83,7 @@ public sealed class Cliente : EntityBase
             agora);
     }
 
-    public void Ativar(DateTimeOffset agora)
+    public void Ativar(DateTimeOffset agora, string? motivo = null)
     {
         GarantirNaoExcluido();
         if (Status == StatusCliente.Ativo)
@@ -91,8 +91,14 @@ public sealed class Cliente : EntityBase
             throw new BusinessRuleException("status", "Cliente já está ativo.");
         }
 
+        if (Status == StatusCliente.Bloqueado && string.IsNullOrWhiteSpace(motivo))
+        {
+            throw new BusinessRuleException("motivo_obrigatorio", "motivo", "Desbloqueio exige motivo auditável.");
+        }
+
+        var vinhaBloqueado = Status == StatusCliente.Bloqueado;
         Status = StatusCliente.Ativo;
-        MotivoStatus = null;
+        MotivoStatus = vinhaBloqueado ? NormalizarMotivo(motivo) : null;
         Tocar(agora);
     }
 

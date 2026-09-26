@@ -25,6 +25,7 @@ public sealed class ClienteMap : IEntityTypeConfiguration<Cliente>
         builder.HasIndex(x => x.Documento).IsUnique();
         builder.HasIndex(x => x.Nome);
         builder.HasIndex(x => x.Status);
+        builder.HasIndex(x => new { x.Status, x.Nome });
 
         builder.HasMany(x => x.Enderecos)
             .WithOne()

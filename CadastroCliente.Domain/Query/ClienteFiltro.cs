@@ -10,6 +10,10 @@ public sealed class ClienteFiltro
     public StatusCliente? Status { get; init; }
     public string? Cidade { get; init; }
     public string? Uf { get; init; }
+    public string? Contato { get; init; }
+    public DateTimeOffset? CriadoDe { get; init; }
+    public DateTimeOffset? CriadoAte { get; init; }
+    public Guid? DepoisDe { get; init; }
     public bool IncluirExcluidos { get; init; }
     public int Pagina { get; init; } = 1;
     public int TamanhoPagina { get; init; } = 20;

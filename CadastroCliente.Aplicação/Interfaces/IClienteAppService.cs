@@ -13,7 +13,7 @@ public interface IClienteAppService
     Task<ClienteDto> PatchAsync(Guid id, PatchClienteRequest request, CancellationToken cancellationToken = default);
     Task ExcluirAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ClienteDto> RestaurarAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<ClienteDto> AtivarAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ClienteDto> AtivarAsync(Guid id, AlterarStatusRequest? request = null, CancellationToken cancellationToken = default);
     Task<ClienteDto> InativarAsync(Guid id, AlterarStatusRequest request, CancellationToken cancellationToken = default);
     Task<ClienteDto> BloquearAsync(Guid id, AlterarStatusRequest request, CancellationToken cancellationToken = default);
 }

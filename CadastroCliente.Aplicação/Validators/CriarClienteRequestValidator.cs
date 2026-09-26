@@ -30,6 +30,13 @@ public sealed class CriarClienteRequestValidator : AbstractValidator<CriarClient
         RuleFor(x => x.Observacoes)
             .MaximumLength(1000);
 
+        RuleFor(x => x.Id)
+            .Empty().WithMessage("O cliente não pode enviar o identificador no POST.");
+
+        RuleFor(x => x.Extra)
+            .Must(extra => extra is null || !extra.Keys.Any(k => k.Equals("id", StringComparison.OrdinalIgnoreCase)))
+            .WithMessage("O cliente não pode enviar o identificador no POST.");
+
         RuleForEach(x => x.Enderecos).SetValidator(new EnderecoRequestValidator());
         RuleForEach(x => x.Contatos).SetValidator(new ContatoRequestValidator());
     }

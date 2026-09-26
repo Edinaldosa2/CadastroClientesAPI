@@ -44,6 +44,18 @@ public sealed class ClienteRepository : BaseRepository<Cliente>, IClienteReposit
         return query.AnyAsync(x => x.Documento == digits, cancellationToken);
     }
 
+    public Task<bool> ExistsDocumentoAtivoAsync(string documento, Guid? ignoreId = null, CancellationToken cancellationToken = default)
+    {
+        var digits = Documento.SomenteDigitos(documento);
+        var query = Set.AsQueryable();
+        if (ignoreId.HasValue)
+        {
+            query = query.Where(x => x.Id != ignoreId.Value);
+        }
+
+        return query.AnyAsync(x => x.Documento == digits, cancellationToken);
+    }
+
     public async Task<PagedResult<Cliente>> SearchAsync(ClienteFiltro filtro, CancellationToken cancellationToken = default)
     {
         var query = QueryComIncludes();
@@ -86,17 +98,55 @@ public sealed class ClienteRepository : BaseRepository<Cliente>, IClienteReposit
             query = query.Where(x => x.Enderecos.Any(e => e.Uf == uf));
         }
 
-        query = Ordenar(query, filtro.OrdenarPor, filtro.Descendente);
+        if (!string.IsNullOrWhiteSpace(filtro.Contato))
+        {
+            var contato = filtro.Contato.Trim().ToLower();
+            var digits = Documento.SomenteDigitos(filtro.Contato);
+            query = query.Where(x => x.Contatos.Any(c =>
+                c.Valor.ToLower().Contains(contato) || (digits.Length > 0 && c.Valor.Contains(digits))));
+        }
+
+        if (filtro.CriadoDe.HasValue)
+        {
+            var de = filtro.CriadoDe.Value.UtcDateTime;
+            query = query.Where(x => x.CriadoEm >= de);
+        }
+
+        if (filtro.CriadoAte.HasValue)
+        {
+            var ate = filtro.CriadoAte.Value.UtcDateTime;
+            query = query.Where(x => x.CriadoEm <= ate);
+        }
+
+        if (filtro.DepoisDe.HasValue && filtro.DepoisDe.Value != Guid.Empty)
+        {
+            var cursor = await Set.AsNoTracking()
+                .IgnoreQueryFilters()
+                .Where(x => x.Id == filtro.DepoisDe.Value)
+                .Select(x => new { x.CriadoEm, x.Id })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (cursor is not null)
+            {
+                query = query.Where(x => x.CriadoEm > cursor.CriadoEm
+                                         || (x.CriadoEm == cursor.CriadoEm && x.Id.CompareTo(cursor.Id) > 0));
+            }
+        }
+
+        var usarCursor = filtro.DepoisDe.HasValue && filtro.DepoisDe.Value != Guid.Empty;
+        query = usarCursor
+            ? query.OrderBy(x => x.CriadoEm).ThenBy(x => x.Id)
+            : Ordenar(query, filtro.OrdenarPor, filtro.Descendente);
 
         var total = await query.CountAsync(cancellationToken);
-        var pagina = filtro.PaginaNormalizada;
+        var pagina = usarCursor ? 1 : filtro.PaginaNormalizada;
         var tamanho = filtro.TamanhoNormalizado;
         var itens = await query
-            .Skip((pagina - 1) * tamanho)
+            .Skip(usarCursor ? 0 : (pagina - 1) * tamanho)
             .Take(tamanho)
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<Cliente>(itens, pagina, tamanho, total);
+        var proximo = itens.Count == tamanho && itens.Count > 0 ? itens[^1].Id.ToString() : null;
+        return new PagedResult<Cliente>(itens, pagina, tamanho, total, proximo);
     }
 
     public async Task<ClienteEstatisticas> GetEstatisticasAsync(CancellationToken cancellationToken = default)
@@ -129,7 +179,8 @@ public sealed class ClienteRepository : BaseRepository<Cliente>, IClienteReposit
         await Set.AddAsync(cliente, cancellationToken);
     }
 
-    public void Remove(Cliente cliente) => Set.Remove(cliente);
+    public void Remove(Cliente cliente)
+        => throw new InvalidOperationException("Exclusão física de cliente é bloqueada. Use exclusão lógica.");
 
     private IQueryable<Cliente> QueryComIncludes()
         => Set.Include(x => x.Enderecos).Include(x => x.Contatos);
