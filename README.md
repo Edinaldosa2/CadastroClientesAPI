@@ -15,16 +15,17 @@ Create a person or company, attach addresses and contacts, search with paginatio
 
 ---
 
-## What's New in v1.0.0
+## What's New in v1.1.0
 
 | Area | Update |
 |------|--------|
-| **REST surface** | Versioned `/api/v1` routes for customers, addresses, contacts, status and reports |
-| **Brazilian documents** | CPF and CNPJ check digits, formatted output, unique document index |
-| **Nested resources** | Addresses (type, CEP, UF, principal) and contacts (email, phone, mobile, WhatsApp) |
-| **Lifecycle** | Activate, inactivate, block, soft delete and restore |
-| **Operability** | Swagger UI, health endpoints, correlation id, optional API key, rate limit, idempotent POST |
-| **Tests** | Unit + integration coverage (~95% line coverage) |
+| **JWT roles** | `POST /api/v1/auth/token` issues `leitura` or `escrita` Bearer tokens |
+| **Concurrency** | `ETag` on GET and optional `If-Match` on PUT/PATCH |
+| **Query** | Cursor (`depoisDe`), contact and created-at filters, sort whitelist |
+| **Idempotency** | Persisted keys + body hash; mismatch returns `409` |
+| **Errors** | RFC 7807 `code` (`cpf_invalido`, `documento_imutavel`, `etag_conflito`, …) |
+| **Safety** | Immutable document, no physical delete, unlock reason, production JWT/InMemory guards |
+| **Ops** | SQLite file health, demo reset, non-root read-only Docker, CSV UTF-8 BOM |
 
 ---
 
@@ -95,13 +96,17 @@ The first start creates `cadastro-clientes.dev.db` and seeds two demo customers 
 ```bash
 curl http://localhost:5105/health
 curl http://localhost:5105/api
-curl http://localhost:5105/api/v1/clientes
+TOKEN=$(curl -s -X POST http://localhost:5105/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"usuario":"editor","senha":"editor-dev"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
+curl -H "Authorization: Bearer $TOKEN" http://localhost:5105/api/v1/clientes
 ```
 
 Create a person:
 
 ```bash
 curl -X POST http://localhost:5105/api/v1/clientes \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: demo-001" \
   -d '{
@@ -129,6 +134,7 @@ Ready-to-run samples: [docs/http/clientes.http](docs/http/clientes.http)
 
 | Workflow | Purpose |
 |----------|---------|
+| **Auth** | Exchange demo credentials for a JWT (`leitura` or `escrita`) |
 | **Catalog** | Discover resources at `GET /api` |
 | **Customers** | Search, create, replace, patch, get by id or document |
 | **Lifecycle** | Activate, inactivate, block, soft-delete, restore |
@@ -148,9 +154,11 @@ Client → /api/v1/clientes  → Application services → Domain rules → SQLit
 
 | Method | Path | Description |
 |--------|------|-------------|
+| POST | `/api/v1/auth/token` | Issue JWT (`leitura` / `escrita`) |
 | GET | `/api` | Public catalog |
 | GET | `/health` `/health/live` `/health/ready` | Health probes |
-| GET | `/api/v1/clientes` | Paginated search (`nome`, `documento`, `tipoPessoa`, `status`, `cidade`, `uf`) |
+| GET | `/api/v1/clientes` | Search (`nome`, `documento`, `contato`, `criadoDe`, `depoisDe`, …) |
+| POST | `/api/v1/dev/reset` | Recreate demo data (blocked in Production) |
 | GET | `/api/v1/clientes/{id}` | Get by id |
 | GET | `/api/v1/clientes/documento/{documento}` | Get by CPF/CNPJ |
 | POST | `/api/v1/clientes` | Create (optional `Idempotency-Key`) |
@@ -171,7 +179,7 @@ Client → /api/v1/clientes  → Application services → Domain rules → SQLit
 
 Version can also be sent as `X-Api-Version: 1.0` or `?api-version=1.0`.
 
-Errors follow [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) Problem Details (`application/problem+json`) with `traceId` and field `errors` when validation fails.
+Errors follow [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) Problem Details (`application/problem+json`) with `traceId`, stable `code` and field `errors` when validation fails.
 
 ---
 
@@ -179,14 +187,16 @@ Errors follow [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) Problem Details
 
 ### Usable API host
 
-- Swagger UI at `/swagger` with XML comments
+- JWT Bearer (`leitura` lists; `escrita` writes, CSV and `incluirExcluidos`)
+- Swagger UI at `/swagger` (JWT required in Production)
 - JSON enums as strings
-- Pagination headers `X-Total-Count`, `X-Page`, `X-Page-Size`
-- CORS open for local integration
+- Pagination headers `X-Total-Count`, `X-Page`, `X-Page-Size`, `X-Next-Cursor`
+- `ETag` / optional `If-Match`
+- CORS: any origin locally; `Security:AllowedOrigins` in Production
 - 120 requests / minute / IP
 - Optional `X-Api-Key` when `Security:ApiKey` is configured
 - `X-Correlation-Id` echoed on every response
-- Idempotent `POST /clientes` via `Idempotency-Key`
+- Persisted idempotent `POST /clientes` via `Idempotency-Key`
 
 ### Domain rules
 
@@ -210,11 +220,24 @@ Errors follow [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) Problem Details
 
 | Rule | Behavior |
 |------|----------|
-| No silent document overwrite | Duplicate CPF/CNPJ returns `409 Conflict` |
-| No hard delete | `DELETE` marks `excluido`; restore is explicit |
-| Blocked gate | Blocked customers reject master-data and nested writes |
-| Validation first | FluentValidation + domain value objects |
-| Production API key | Set `Security:ApiKey` to require `X-Api-Key` |
+| JWT on data | Unauthenticated reads of customers/reports return `401` |
+| Role split | `leitura` cannot write, export CSV, list deleted rows or reset |
+| Immutable document | PATCH/extra `documento` returns `422 documento_imutavel` |
+| No all-zero docs | CPF/CNPJ with a single repeated digit is invalid |
+| No hard delete | Repository `Remove` throws; `DELETE` is soft-delete only |
+| No collection delete | `DELETE /api/v1/clientes` returns `405` |
+| Blocked gate | Blocked customers reject edits; unlock requires `motivo` |
+| Restore clash | Restore fails with `409` if another active row owns the document |
+| Client-supplied id | POST `id` is rejected |
+| Empty id | `Guid.Empty` returns `422 id_invalido` |
+| Stale write | Wrong `If-Match` returns `412 etag_conflito` |
+| Idempotency | Same key + different body returns `409 idempotency_conflito` |
+| Sort injection | Unknown `ordenarPor` falls back to `nome` |
+| InMemory host | SQLite memory is blocked outside `Testing` |
+| Weak JWT | Production rejects keys shorter than 32 chars or containing `dev-only` |
+| No stack in prod | `500` detail is omitted in Production |
+| Demo reset | `POST /api/v1/dev/reset` is `403` in Production |
+| Docker | Non-root uid `10001`, read-only root, tmpfs `/tmp` |
 
 ---
 
@@ -253,7 +276,7 @@ docker compose up --build
 curl http://localhost:8080/health/ready
 ```
 
-Connection string inside the container: `Data Source=/app/data/cadastro-clientes.db`.
+The image runs as uid `10001`. Compose mounts a volume on `/app/data`, uses a read-only root filesystem and a tmpfs `/tmp`. Set a production `Jwt__Key` (32+ characters, not `dev-only`) before exposing the container.
 
 ---
 
@@ -310,7 +333,8 @@ CadastroClientes é uma **Web API .NET 8** para **cadastro mestre com CPF/CNPJ v
 | **Documentos** | Dígitos verificadores de CPF e CNPJ, saída formatada, índice único |
 | **Recursos aninhados** | Endereços (tipo, CEP, UF, principal) e contatos (e-mail, telefone, celular, WhatsApp) |
 | **Ciclo de vida** | Ativar, inativar, bloquear, excluir logicamente e restaurar |
-| **Operação** | Swagger, health, correlation id, API key opcional, rate limit, POST idempotente |
+| **Auth** | JWT `leitura` / `escrita` em `POST /api/v1/auth/token` |
+| **Operação** | Swagger, health de arquivo, reset de demo, Docker sem root, POST idempotente persistido |
 | **Testes** | Cobertura unitária e de integração (~95% das linhas) |
 
 ---
@@ -333,7 +357,7 @@ A primeira execução cria o SQLite e duas sementes de demonstração.
 
 ## Rotas
 
-Consulte a tabela em [HTTP Routes](#http-routes). Os erros seguem Problem Details (RFC 7807). Filtros de listagem: `nome`, `documento`, `tipoPessoa`, `status`, `cidade`, `uf`, `pagina`, `tamanhoPagina`, `ordenarPor`, `descendente`.
+Consulte a tabela em [HTTP Routes](#http-routes). Autentique com `editor` / `editor-dev`. Os erros seguem Problem Details (RFC 7807) com `code`. Filtros: `nome`, `documento`, `contato`, `criadoDe`, `depoisDe`, `pagina`, `ordenarPor`.
 
 ---
 

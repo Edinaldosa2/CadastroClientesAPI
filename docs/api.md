@@ -4,6 +4,8 @@ Base URL (local): `http://localhost:5105`
 
 Content type: `application/json` with string enums (`Fisica`, `Ativo`, `Residencial`, `Email`, …).
 
+Protected routes require `Authorization: Bearer {token}` from `POST /api/v1/auth/token`. Demo users: `editor` / `editor-dev` (escrita) and `leitor` / `leitor-dev` (leitura).
+
 ## Status codes
 
 | Code | When |
@@ -11,13 +13,18 @@ Content type: `application/json` with string enums (`Fisica`, `Ativo`, `Residenc
 | 200 | Read, replace, patch, status change |
 | 201 | Create |
 | 204 | Soft delete or nested delete |
-| 400 | FluentValidation / malformed Idempotency-Key |
-| 401 | API key configured and missing/wrong |
+| 400 | FluentValidation / malformed Idempotency-Key / client-supplied id |
+| 401 | Missing JWT, invalid credentials, or API key configured and missing/wrong |
+| 403 | Role `leitura` on a write, CSV export, `incluirExcluidos`, or reset |
 | 404 | Unknown customer, address or contact |
-| 409 | Duplicate document or contact; idempotency key reused with another body; concurrency |
-| 422 | Domain rule (invalid CPF, blocked customer, status already applied) |
+| 405 | `DELETE /api/v1/clientes` (collection delete is blocked) |
+| 409 | Duplicate document or contact; idempotency key reused with another body; restore conflict; concurrency |
+| 412 | `If-Match` does not match the current ETag (`etag_conflito`) |
+| 422 | Domain rule (invalid CPF, blocked customer, immutable document, unlock without reason) |
 | 429 | Rate limit |
-| 500 | Unhandled (detail included outside Production) |
+| 500 | Unhandled (stack detail only outside Production) |
+
+Problem Details include a stable `code` (`cpf_invalido`, `documento_imutavel`, `cliente_bloqueado`, `motivo_obrigatorio`, `id_invalido`, `etag_conflito`, `idempotency_conflito`, …).
 
 ## List filters
 
@@ -30,10 +37,13 @@ Content type: `application/json` with string enums (`Fisica`, `Ativo`, `Residenc
 | tipoPessoa | | `Fisica` or `Juridica` |
 | status | | `Ativo`, `Inativo`, `Bloqueado` |
 | cidade / uf | | Matches any address |
-| incluirExcluidos | false | Include soft-deleted |
-| pagina | 1 | |
+| contato | | Matches contact value (email or digits) |
+| criadoDe / criadoAte | | UTC creation window |
+| depoisDe | | Cursor: customer id; response may include `X-Next-Cursor` |
+| incluirExcluidos | false | Soft-deleted rows; requires role `escrita` |
+| pagina | 1 | Ignored when `depoisDe` is set |
 | tamanhoPagina | 20 | Capped at 100 |
-| ordenarPor | nome | `nome`, `documento`, `status`, `criadoEm`, `atualizadoEm` |
+| ordenarPor | nome | Whitelist: `nome`, `documento`, `status`, `criadoEm`, `atualizadoEm` |
 | descendente | false | |
 
 Response envelope:
@@ -46,25 +56,38 @@ Response envelope:
   "total": 2,
   "totalPaginas": 1,
   "temProxima": false,
-  "temAnterior": false
+  "temAnterior": false,
+  "proximoCursor": null
 }
 ```
 
+`GET /api/v1/clientes/{id}` returns `ETag`. Send `If-Match` on PUT/PATCH to reject stale writes.
+
 ## Create customer
 
-`POST /api/v1/clientes`
+`POST /api/v1/clientes` — role `escrita`.
 
-Optional header: `Idempotency-Key` (max 80 chars). Repeat with the same key and body to receive the original `201`.
+Optional header: `Idempotency-Key` (max 80 chars). The key and body hash are persisted. Repeat with the same key and body to receive the original `201`. A different body with the same key returns `409` (`idempotency_conflito`). Client-supplied `id` is rejected.
 
-Documento is stored as digits only and returned both raw and formatted.
+Documento is stored as digits only and is immutable after create.
 
 ## Patch
 
 `PATCH /api/v1/clientes/{id}`
 
-Omitted fields stay unchanged. To clear `observacoes` or `dataNascimento`, set the value to `null` and the matching `atualizar*` flag to `true`.
+Omitted fields stay unchanged. To clear `observacoes` or `dataNascimento`, set the value to `null` and the matching `atualizar*` flag to `true`. Sending `documento` (property or extra field) returns `422` (`documento_imutavel`).
+
+## Status
+
+Unlocking a blocked customer requires `{ "motivo": "..." }`. Soft delete is logical only; `ClienteRepository.Remove` throws. Restore is blocked when another active customer already owns the document.
 
 ## Reports
 
-- `GET /api/v1/relatorios/clientes/resumo` — totals by status, person type and UF of the principal address.
-- `GET /api/v1/relatorios/clientes/exportar` — `text/csv` with `;` separator.
+- `GET /api/v1/relatorios/clientes/resumo` — totals by status, person type and UF of the principal address (leitura).
+- `GET /api/v1/relatorios/clientes/exportar` — UTF-8 BOM `text/csv` with `;` separator (escrita).
+
+## Operations
+
+- `POST /api/v1/dev/reset` — wipe and reseed. Role `escrita`. `403` in Production.
+- `GET /health`, `/health/live`, `/health/ready` — anonymous. Ready includes SQLite file check.
+- Swagger is anonymous outside Production; Production requires a valid JWT.

@@ -31,6 +31,6 @@ The repository started as an empty ASP.NET Core 7 Razor Pages template with DDD 
 
 ## Remaining product choices (not defects)
 
-- Authentication is an optional static API key, not OAuth/JWT.
-- Idempotency store is in-memory (single instance).
+- JWT users are configured in `appsettings` (demo credentials). Swap `TokenService` for an identity provider when needed.
+- Optional `X-Api-Key` remains as a second gate when `Security:ApiKey` is set.
 - SQLite is the default engine; SQL Server is a connection-string + provider swap.

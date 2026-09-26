@@ -1,4 +1,5 @@
 @baseUrl = http://localhost:5105
+@token = Bearer cole-o-jwt-aqui
 @id = 00000000-0000-0000-0000-000000000000
 
 ### Catalog
@@ -7,11 +8,26 @@ GET {{baseUrl}}/api
 ### Health
 GET {{baseUrl}}/health/ready
 
+### Login editor
+POST {{baseUrl}}/api/v1/auth/token
+Content-Type: application/json
+
+{
+  "usuario": "editor",
+  "senha": "editor-dev"
+}
+
 ### List customers
-GET {{baseUrl}}/api/v1/clientes?pagina=1&tamanhoPagina=20&ordenarPor=nome
+GET {{baseUrl}}/api/v1/clientes?pagina=1&tamanhoPagina=20&ordenarPor=nome&contato=@example.com
+Authorization: {{token}}
+
+### Cursor page
+GET {{baseUrl}}/api/v1/clientes?depoisDe={{id}}
+Authorization: {{token}}
 
 ### Create person
 POST {{baseUrl}}/api/v1/clientes
+Authorization: {{token}}
 Content-Type: application/json
 Idempotency-Key: demo-joao
 
@@ -43,9 +59,21 @@ Idempotency-Key: demo-joao
 
 ### Get by document
 GET {{baseUrl}}/api/v1/clientes/documento/11144477735
+Authorization: {{token}}
+
+### Replace with If-Match
+PUT {{baseUrl}}/api/v1/clientes/{{id}}
+Authorization: {{token}}
+Content-Type: application/json
+If-Match: "etag-do-get"
+
+{
+  "nome": "João da Silva Souza"
+}
 
 ### Add address
 POST {{baseUrl}}/api/v1/clientes/{{id}}/enderecos
+Authorization: {{token}}
 Content-Type: application/json
 
 {
@@ -59,8 +87,19 @@ Content-Type: application/json
   "principal": false
 }
 
+### Unlock blocked customer
+POST {{baseUrl}}/api/v1/clientes/{{id}}/ativar
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "motivo": "revisão cadastral"
+}
+
 ### Summary report
 GET {{baseUrl}}/api/v1/relatorios/clientes/resumo
+Authorization: {{token}}
 
-### CSV export
+### CSV export (escrita)
 GET {{baseUrl}}/api/v1/relatorios/clientes/exportar
+Authorization: {{token}}
