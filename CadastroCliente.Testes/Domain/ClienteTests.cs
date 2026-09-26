@@ -1,5 +1,6 @@
 using CadastroCliente.Domain.Entities;
 using CadastroCliente.Domain.Enums;
+using CadastroCliente.Domain.Events;
 using CadastroCliente.Domain.Exceptions;
 using CadastroCliente.Domain.Query;
 using FluentAssertions;
@@ -19,6 +20,7 @@ public class ClienteTests
         cliente.Status.Should().Be(StatusCliente.Ativo);
         cliente.Documento.Should().Be("52998224725");
         cliente.DataNascimento.Should().Be(new DateTime(1990, 1, 1));
+        cliente.Eventos.Should().ContainSingle(e => e is ClienteCriado);
     }
 
     [Fact]
@@ -59,6 +61,7 @@ public class ClienteTests
         cliente.Ativar(Agora, "desbloqueio auditado");
         cliente.Status.Should().Be(StatusCliente.Ativo);
         cliente.MotivoStatus.Should().Be("desbloqueio auditado");
+        cliente.Eventos.OfType<ClienteStatusAlterado>().Should().HaveCount(4);
     }
 
     [Fact]
@@ -80,6 +83,8 @@ public class ClienteTests
         cliente.Restaurar(Agora);
         cliente.Excluido.Should().BeFalse();
         cliente.Status.Should().Be(StatusCliente.Ativo);
+        cliente.Eventos.Should().Contain(e => e is ClienteExcluido);
+        cliente.Eventos.Should().Contain(e => e is ClienteRestaurado);
     }
 
     [Fact]

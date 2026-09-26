@@ -94,6 +94,18 @@ public class ClientesApiTests : IClassFixture<ApiFactory>
         (await _client.GetAsync($"/api/v1/clientes/{criado.Id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await _client.PostAsync($"/api/v1/clientes/{criado.Id}/restaurar", null)).EnsureSuccessStatusCode();
         (await _client.GetAsync($"/api/v1/clientes/{criado.Id}")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var auditoria = await _client.GetFromJsonAsync<List<AuditoriaDto>>($"/api/v1/clientes/{criado.Id}/auditoria", Json);
+        auditoria.Should().NotBeNull();
+        auditoria!.Select(x => x.Tipo).Should().Contain(new[]
+        {
+            "cliente.criado",
+            "cliente.atualizado",
+            "cliente.status_alterado",
+            "cliente.excluido",
+            "cliente.restaurado"
+        });
+        auditoria.Should().OnlyContain(x => x.Usuario == "editor");
     }
 
     [Fact]
