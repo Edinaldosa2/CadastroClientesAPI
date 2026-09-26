@@ -15,6 +15,15 @@ Create a person or company, attach addresses and contacts, search with paginatio
 
 ---
 
+## What's New in v1.2.0
+
+| Area | Update |
+|------|--------|
+| **Admin role** | JWT profile `admin` receives `admin` + `escrita` + `leitura` and can do every operation |
+| **Demo user** | `admin` / `admin-dev` sits beside `editor` (write) and `leitor` (read) |
+| **Admin surface** | `GET /api/v1/admin/usuarios` and paginated `GET /api/v1/admin/auditoria` |
+| **Reset** | `POST /api/v1/dev/reset` is admin-only (still blocked in Production) |
+
 ## What's New in v1.1.0
 
 | Area | Update |
@@ -127,6 +136,8 @@ curl -X POST http://localhost:5105/api/v1/clientes \
   }'
 ```
 
+Demo users: `admin` / `admin-dev` (everything), `editor` / `editor-dev` (write) and `leitor` / `leitor-dev` (read).
+
 Ready-to-run samples: [docs/http/clientes.http](docs/http/clientes.http)
 
 ---
@@ -135,7 +146,7 @@ Ready-to-run samples: [docs/http/clientes.http](docs/http/clientes.http)
 
 | Workflow | Purpose |
 |----------|---------|
-| **Auth** | Exchange demo credentials for a JWT (`leitura` or `escrita`) |
+| **Auth** | Exchange demo credentials for a JWT (`admin`, `escrita` or `leitura`) |
 | **Catalog** | Discover resources at `GET /api` |
 | **Customers** | Search, create, replace, patch, get by id or document |
 | **Lifecycle** | Activate, inactivate, block, soft-delete, restore |
@@ -155,11 +166,13 @@ Client → /api/v1/clientes  → Application services → Domain rules → SQLit
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/auth/token` | Issue JWT (`leitura` / `escrita`) |
+| POST | `/api/v1/auth/token` | Issue JWT (`admin` / `escrita` / `leitura`) |
 | GET | `/api` | Public catalog |
 | GET | `/health` `/health/live` `/health/ready` | Health probes |
 | GET | `/api/v1/clientes` | Search (`nome`, `documento`, `contato`, `criadoDe`, `depoisDe`, …) |
-| POST | `/api/v1/dev/reset` | Recreate demo data (blocked in Production) |
+| GET | `/api/v1/admin/usuarios` | List configured users (admin; no passwords) |
+| GET | `/api/v1/admin/auditoria` | Global audit trail with pagination (admin) |
+| POST | `/api/v1/dev/reset` | Recreate demo data (admin; blocked in Production) |
 | GET | `/api/v1/clientes/{id}` | Get by id |
 | GET | `/api/v1/clientes/documento/{documento}` | Get by CPF/CNPJ |
 | POST | `/api/v1/clientes` | Create (optional `Idempotency-Key`) |
@@ -189,7 +202,7 @@ Errors follow [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) Problem Details
 
 ### Usable API host
 
-- JWT Bearer (`leitura` lists; `escrita` writes, CSV and `incluirExcluidos`)
+- JWT Bearer (`leitura` lists; `escrita` writes, CSV and `incluirExcluidos`; `admin` does everything plus `/admin/*` and reset)
 - Swagger UI at `/swagger` (JWT required in Production)
 - JSON enums as strings
 - Pagination headers `X-Total-Count`, `X-Page`, `X-Page-Size`, `X-Next-Cursor`
@@ -223,7 +236,8 @@ Errors follow [RFC 7807](https://www.rfc-editor.org/rfc/rfc7807) Problem Details
 | Rule | Behavior |
 |------|----------|
 | JWT on data | Unauthenticated reads of customers/reports return `401` |
-| Role split | `leitura` cannot write, export CSV, list deleted rows or reset |
+| Role split | `leitura` cannot write, export CSV, list deleted rows, manage users or reset |
+| Admin gate | `/api/v1/admin/*` and demo reset require `admin`; `escrita` still writes |
 | Immutable document | PATCH/extra `documento` returns `422 documento_imutavel` |
 | No all-zero docs | CPF/CNPJ with a single repeated digit is invalid |
 | No hard delete | Repository `Remove` throws; `DELETE` is soft-delete only |
@@ -327,6 +341,14 @@ CadastroClientes é uma **Web API .NET 8** para **cadastro mestre com CPF/CNPJ v
 
 ---
 
+## O que há de novo na v1.2.0
+
+| Área | Atualização |
+|------|-------------|
+| **Perfil admin** | O JWT `admin` inclui `admin` + `escrita` + `leitura` e gerencia a API inteira |
+| **Gestão** | `GET /api/v1/admin/usuarios` e auditoria global paginada em `GET /api/v1/admin/auditoria` |
+| **Reset** | `POST /api/v1/dev/reset` passa a ser exclusivo do admin |
+
 ## O que há de novo na v1.0.0
 
 | Área | Atualização |
@@ -335,7 +357,7 @@ CadastroClientes é uma **Web API .NET 8** para **cadastro mestre com CPF/CNPJ v
 | **Documentos** | Dígitos verificadores de CPF e CNPJ, saída formatada, índice único |
 | **Recursos aninhados** | Endereços (tipo, CEP, UF, principal) e contatos (e-mail, telefone, celular, WhatsApp) |
 | **Ciclo de vida** | Ativar, inativar, bloquear, excluir logicamente e restaurar |
-| **Auth** | JWT `leitura` / `escrita` em `POST /api/v1/auth/token` |
+| **Auth** | JWT `admin` / `escrita` / `leitura` em `POST /api/v1/auth/token` |
 | **Operação** | Swagger, health de arquivo, reset de demo, Docker sem root, POST idempotente persistido |
 | **Testes** | Cobertura unitária e de integração (~95% das linhas) |
 
@@ -359,7 +381,7 @@ A primeira execução cria o SQLite e duas sementes de demonstração.
 
 ## Rotas
 
-Consulte a tabela em [HTTP Routes](#http-routes). Autentique com `editor` / `editor-dev`. Os erros seguem Problem Details (RFC 7807) com `code`. Filtros: `nome`, `documento`, `contato`, `criadoDe`, `depoisDe`, `pagina`, `ordenarPor`.
+Consulte a tabela em [HTTP Routes](#http-routes). Autentique com `admin` / `admin-dev` (tudo), `editor` / `editor-dev` (escrita) ou `leitor` / `leitor-dev` (leitura). Os erros seguem Problem Details (RFC 7807) com `code`. Filtros: `nome`, `documento`, `contato`, `criadoDe`, `depoisDe`, `pagina`, `ordenarPor`.
 
 ---
 

@@ -8,6 +8,15 @@ GET {{baseUrl}}/api
 ### Health
 GET {{baseUrl}}/health/ready
 
+### Login admin
+POST {{baseUrl}}/api/v1/auth/token
+Content-Type: application/json
+
+{
+  "usuario": "admin",
+  "senha": "admin-dev"
+}
+
 ### Login editor
 POST {{baseUrl}}/api/v1/auth/token
 Content-Type: application/json
@@ -104,6 +113,18 @@ Authorization: {{token}}
 GET {{baseUrl}}/api/v1/relatorios/clientes/resumo
 Authorization: {{token}}
 
-### CSV export (escrita)
+### CSV export (escrita or admin)
 GET {{baseUrl}}/api/v1/relatorios/clientes/exportar
+Authorization: {{token}}
+
+### Admin users (no passwords)
+GET {{baseUrl}}/api/v1/admin/usuarios
+Authorization: {{token}}
+
+### Global audit
+GET {{baseUrl}}/api/v1/admin/auditoria?pagina=1&tamanhoPagina=20
+Authorization: {{token}}
+
+### Demo reset (admin)
+POST {{baseUrl}}/api/v1/dev/reset
 Authorization: {{token}}

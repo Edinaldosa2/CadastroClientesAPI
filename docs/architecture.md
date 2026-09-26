@@ -4,7 +4,7 @@ CadastroClientes is a layered .NET 8 API. Dependencies point inward: the HTTP ho
 
 ```
 CadastroClientes (API)
-        │  JWT, ICurrentUser, correlation
+        │  JWT, ICurrentUser (roles/admin), correlation
         ▼
 CadastroCliente.Service
         │  use cases + domain event dispatcher
@@ -16,7 +16,7 @@ CadastroCliente.Service
 
 ## Data flow
 
-1. Controller binds JSON to a request DTO and enforces JWT roles.
+1. Controller binds JSON to a request DTO and enforces JWT policies (`Leitura`, `Escrita`, `Admin`).
 2. Application service runs FluentValidation.
 3. Domain entity enforces invariants (CPF/CNPJ, status, nested limits, unlock reason) and raises domain events.
 4. `DispatchingUnitOfWork` persists SQLite, then dispatches events. A handler writes the audit trail. Physical delete of a customer throws.
@@ -32,7 +32,7 @@ CadastroCliente.Service
 |------|-----------------|
 | SQL Server / PostgreSQL | `AddDbContext` in `Program.cs` and the matching EF provider package |
 | Extra customer fields | `Cliente` entity + mapping + DTO + validator |
-| Authentication users | `Users` and `Jwt` in configuration; `TokenService` |
+| Authentication users | `Users` and `Jwt` in configuration; `TokenService` (admin lists users without passwords) |
 | Extra event handler | Implement `IDomainEventHandler` and register it in `AddCadastroServices` |
 | Outbox / message bus | Replace the in-process dispatcher with a queued publisher |
 | Multi-tenant | Add `TenantId` to `EntityBase` and a global query filter |
@@ -41,12 +41,14 @@ CadastroCliente.Service
 
 - Primary keys are application-assigned GUIDs stored as TEXT on SQLite.
 - New nested entities (address/contact) must be `RegisterNew`'d so EF inserts instead of updating a missing row.
-- `HasQueryFilter(c => !c.Excluido)` hides soft-deleted customers. Pass `incluirExcluidos=true` (escrita) or call restore.
+- `HasQueryFilter(c => !c.Excluido)` hides soft-deleted customers. Pass `incluirExcluidos=true` (escrita or admin) or call restore.
 - Idempotency keys live in `idempotency_keys` with the request body hash.
 
 ## HTTP cross-cutting
 
-- JWT Bearer (`leitura` / `escrita`) on customer, address, contact and report routes.
+- JWT Bearer policies: `Leitura` (`leitura`/`escrita`/`admin`), `Escrita` (`escrita`/`admin`), `Admin` (`admin` only) on customer, address, contact, report, admin and reset routes.
+- `admin` tokens include roles `admin` + `escrita` + `leitura`. `ICurrentUser` exposes `IsAdmin`, `PodeEscrever`, `PodeLer` and `Roles`.
+- Admin management: `GET /api/v1/admin/usuarios` and paginated `GET /api/v1/admin/auditoria`. Demo reset is admin-only.
 - `ExceptionHandlingMiddleware` maps domain exceptions to 404/409/412/422/400/500 and never leaks stack traces in Production.
 - `RequestLoggingMiddleware` scopes method/path; documents are masked via `DocumentoHelper.Mascarado`.
 - `CorrelationIdMiddleware` honors and echoes `X-Correlation-Id`.

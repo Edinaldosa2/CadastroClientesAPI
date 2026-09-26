@@ -4,7 +4,7 @@ Base URL (local): `http://localhost:5105`
 
 Content type: `application/json` with string enums (`Fisica`, `Ativo`, `Residencial`, `Email`, …).
 
-Protected routes require `Authorization: Bearer {token}` from `POST /api/v1/auth/token`. Demo users: `editor` / `editor-dev` (escrita) and `leitor` / `leitor-dev` (leitura).
+Protected routes require `Authorization: Bearer {token}` from `POST /api/v1/auth/token`. Demo users: `admin` / `admin-dev` (admin), `editor` / `editor-dev` (escrita) and `leitor` / `leitor-dev` (leitura). The `admin` token includes roles `admin`, `escrita` and `leitura`.
 
 ## Status codes
 
@@ -15,7 +15,7 @@ Protected routes require `Authorization: Bearer {token}` from `POST /api/v1/auth
 | 204 | Soft delete or nested delete |
 | 400 | FluentValidation / malformed Idempotency-Key / client-supplied id |
 | 401 | Missing JWT, invalid credentials, or API key configured and missing/wrong |
-| 403 | Role `leitura` on a write, CSV export, `incluirExcluidos`, or reset |
+| 403 | Role `leitura` on a write, CSV export or `incluirExcluidos`; non-admin on `/admin/*` or reset |
 | 404 | Unknown customer, address or contact |
 | 405 | `DELETE /api/v1/clientes` (collection delete is blocked) |
 | 409 | Duplicate document or contact; idempotency key reused with another body; restore conflict; concurrency |
@@ -40,7 +40,7 @@ Problem Details include a stable `code` (`cpf_invalido`, `documento_imutavel`, `
 | contato | | Matches contact value (email or digits) |
 | criadoDe / criadoAte | | UTC creation window |
 | depoisDe | | Cursor: customer id; response may include `X-Next-Cursor` |
-| incluirExcluidos | false | Soft-deleted rows; requires role `escrita` |
+| incluirExcluidos | false | Soft-deleted rows; requires role `escrita` or `admin` |
 | pagina | 1 | Ignored when `depoisDe` is set |
 | tamanhoPagina | 20 | Capped at 100 |
 | ordenarPor | nome | Whitelist: `nome`, `documento`, `status`, `criadoEm`, `atualizadoEm` |
@@ -65,7 +65,7 @@ Response envelope:
 
 ## Create customer
 
-`POST /api/v1/clientes` — role `escrita`.
+`POST /api/v1/clientes` — role `escrita` or `admin`.
 
 Optional header: `Idempotency-Key` (max 80 chars). The key and body hash are persisted. Repeat with the same key and body to receive the original `201`. A different body with the same key returns `409` (`idempotency_conflito`). Client-supplied `id` is rejected.
 
@@ -85,13 +85,20 @@ Unlocking a blocked customer requires `{ "motivo": "..." }`. Soft delete is logi
 
 `GET /api/v1/clientes/{id}/auditoria` — chronological trail (`cliente.criado`, `cliente.atualizado`, `cliente.status_alterado`, `cliente.excluido`, `cliente.restaurado`) with `usuario` and `correlationId`. Soft-deleted customers remain readable here.
 
+`GET /api/v1/admin/auditoria` — admin-only global trail with the same `PagedResult` envelope (`pagina`, `tamanhoPagina` capped at 100). Newest events first.
+
 ## Reports
 
 - `GET /api/v1/relatorios/clientes/resumo` — totals by status, person type and UF of the principal address (leitura).
-- `GET /api/v1/relatorios/clientes/exportar` — UTF-8 BOM `text/csv` with `;` separator (escrita).
+- `GET /api/v1/relatorios/clientes/exportar` — UTF-8 BOM `text/csv` with `;` separator (escrita or admin).
+
+## Administration
+
+- `GET /api/v1/admin/usuarios` — configured users (`usuario`, `perfil`). Never returns passwords. Role `admin`.
+- `GET /api/v1/admin/auditoria` — paginated global audit. Role `admin`.
 
 ## Operations
 
-- `POST /api/v1/dev/reset` — wipe and reseed. Role `escrita`. `403` in Production.
+- `POST /api/v1/dev/reset` — wipe and reseed. Role `admin`. `403` in Production and for `escrita`/`leitura`.
 - `GET /health`, `/health/live`, `/health/ready` — anonymous. Ready includes SQLite file check.
 - Swagger is anonymous outside Production; Production requires a valid JWT.
