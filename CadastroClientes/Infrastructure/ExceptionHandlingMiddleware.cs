@@ -35,6 +35,7 @@ public sealed class ExceptionHandlingMiddleware
         {
             NotFoundException => (HttpStatusCode.NotFound, exception.Message, null),
             ConflictException => (HttpStatusCode.Conflict, exception.Message, null),
+            PreconditionFailedException => (HttpStatusCode.PreconditionFailed, exception.Message, null),
             BusinessRuleException business => (HttpStatusCode.UnprocessableEntity, business.Message, business.Errors),
             ValidationException validation => (HttpStatusCode.BadRequest, "Um ou mais campos são inválidos.",
                 validation.Errors
@@ -53,6 +54,10 @@ public sealed class ExceptionHandlingMiddleware
             Instance = context.Request.Path
         };
         problem.Extensions["traceId"] = context.TraceIdentifier;
+        if (exception is DomainException domain)
+        {
+            problem.Extensions["code"] = domain.Code;
+        }
         if (errors is { Count: > 0 })
         {
             problem.Extensions["errors"] = errors;

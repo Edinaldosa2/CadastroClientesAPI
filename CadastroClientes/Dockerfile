@@ -1,10 +1,12 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+RUN adduser --disabled-password --gecos "" --uid 10001 appuser \
+    && mkdir -p /app/data /tmp \
+    && chown -R appuser:appuser /app /tmp
+USER appuser
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
@@ -26,5 +28,6 @@ RUN dotnet publish "CadastroClientes.csproj" -c Release -o /app/publish /p:UseAp
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=publish --chown=appuser:appuser /app/publish .
+USER appuser
 ENTRYPOINT ["dotnet", "CadastroClientes.dll"]

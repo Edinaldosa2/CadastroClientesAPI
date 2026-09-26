@@ -1,11 +1,13 @@
 using Asp.Versioning;
 using CadastroCliente.Aplicacao.DTOs;
 using CadastroCliente.Aplicacao.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CadastroClientes.Controllers;
 
 [ApiController]
+[Authorize(Roles = "leitura,escrita")]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/relatorios/clientes")]
 [Produces("application/json")]
@@ -26,6 +28,7 @@ public sealed class RelatoriosController : ControllerBase
 
     /// <summary>Exporta a listagem de clientes em CSV.</summary>
     [HttpGet("exportar")]
+    [Authorize(Roles = "escrita")]
     [Produces("text/csv")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> Exportar(CancellationToken cancellationToken)

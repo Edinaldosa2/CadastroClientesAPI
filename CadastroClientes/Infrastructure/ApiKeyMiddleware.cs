@@ -34,5 +34,8 @@ public sealed class ApiKeyMiddleware
         => path.StartsWithSegments("/health")
            || path.StartsWithSegments("/swagger")
            || path.StartsWithSegments("/favicon")
-           || path == "/";
+           || path.StartsWithSegments("/api/v1/auth")
+           || path == "/"
+           || path == "/api"
+           || path == "/api/v1";
 }

@@ -8,8 +8,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Default: Data Source=/app/data/cadastro-clientes.db
+      Jwt__Key: dev-only-key-change-in-production-32ch
+    read_only: true
+    tmpfs:
+      - /tmp:uid=10001,gid=10001,mode=1777
     volumes:
       - clientes-data:/app/data
+    user: "10001:10001"
 
 volumes:
   clientes-data:
